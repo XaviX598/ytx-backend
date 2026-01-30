@@ -16,7 +16,10 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {
+    "http://localhost:3000",
+    "https://ytx-download.vercel.app"
+  })
 public class VideoController {
 
     private final String YT_DLP_PATH = System.getenv().getOrDefault(
