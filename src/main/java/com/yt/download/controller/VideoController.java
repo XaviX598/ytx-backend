@@ -17,17 +17,12 @@ import java.util.UUID;
 @RequestMapping("/api")
 public class VideoController {
 
-    private final String YT_DLP_PATH = System.getenv().getOrDefault(
-        "YT_DLP_PATH",
-        "C:\\herramientas\\yt-dlp.exe" // fallback local Windows
-    );
-    private final String TMP_DIR = System.getenv().getOrDefault(
-        "TMP_DIR",
-        System.getProperty("java.io.tmpdir")
-    );
+    private final String YT_DLP_PATH = System.getenv().getOrDefault("YT_DLP_PATH", "yt-dlp");
+private final String TMP_DIR = System.getenv().getOrDefault("TMP_DIR", System.getProperty("java.io.tmpdir"));
 
 
-    @PostMapping("/info")
+
+@PostMapping("/info")
 public ResponseEntity<String> getVideoInfo(@RequestBody Map<String, String> payload) {
     String videoUrl = payload.get("url");
     if (videoUrl == null || videoUrl.isBlank()) {
@@ -44,14 +39,14 @@ public ResponseEntity<String> getVideoInfo(@RequestBody Map<String, String> payl
                 videoUrl
         );
 
-        pb.redirectErrorStream(true); // <-- clave: mezcla stderr con stdout
+        pb.redirectErrorStream(true);
         Process process = pb.start();
 
         StringBuilder out = new StringBuilder();
         try (BufferedReader r = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
             String line;
             while ((line = r.readLine()) != null) {
-                System.out.println("[yt-dlp] " + line); // logs en Render
+                System.out.println("[yt-dlp] " + line);
                 out.append(line);
             }
         }
@@ -76,6 +71,7 @@ public ResponseEntity<String> getVideoInfo(@RequestBody Map<String, String> payl
                 .body("{\"error\":\"No se pudo obtener la info\",\"detail\":\"" + e.getMessage() + "\"}");
     }
 }
+
 
 @GetMapping("/ping")
 public ResponseEntity<String> ping() {
