@@ -37,46 +37,43 @@ public ResponseEntity<String> getVideoInfo(@RequestBody Map<String, String> payl
     }
 
     try {
-        // ❌ NO redirectErrorStream(true) aquí
-        ProcessBuilder pb = new ProcessBuilder(YT_DLP_PATH, "--dump-json", videoUrl);
+        ProcessBuilder pb = new ProcessBuilder(
+                YT_DLP_PATH,
+                "--no-warnings",
+                "--dump-json",
+                videoUrl
+        );
+
+        pb.redirectErrorStream(true); // <-- clave: mezcla stderr con stdout
         Process process = pb.start();
 
-        // 1) stdout = JSON
-        StringBuilder jsonResponse = new StringBuilder();
-        try (BufferedReader out = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+        StringBuilder out = new StringBuilder();
+        try (BufferedReader r = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
             String line;
-            while ((line = out.readLine()) != null) {
-                jsonResponse.append(line);
+            while ((line = r.readLine()) != null) {
+                System.out.println("[yt-dlp] " + line); // logs en Render
+                out.append(line);
             }
         }
 
-        // 2) stderr = warnings/logs (solo para consola)
-        StringBuilder err = new StringBuilder();
-        try (BufferedReader e = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
-            String line;
-            while ((line = e.readLine()) != null) {
-                err.append(line).append("\n");
-            }
-        }
+        int exit = process.waitFor();
+        System.out.println("yt-dlp exit code: " + exit);
 
-        int exitCode = process.waitFor();
-
-        if (exitCode != 0 || jsonResponse.length() == 0) {
-            System.err.println("yt-dlp stderr:\n" + err);
+        if (exit != 0 || out.isEmpty()) {
             return ResponseEntity.status(500)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body("{\"error\":\"yt-dlp falló obteniendo info\"}");
+                    .body("{\"error\":\"yt-dlp fallo en /info\",\"exitCode\":" + exit + "}");
         }
 
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(jsonResponse.toString());
+                .body(out.toString());
 
     } catch (Exception e) {
         e.printStackTrace();
         return ResponseEntity.status(500)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body("{\"error\":\"No se pudo obtener la info\"}");
+                .body("{\"error\":\"No se pudo obtener la info\",\"detail\":\"" + e.getMessage() + "\"}");
     }
 }
 
