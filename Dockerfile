@@ -11,8 +11,11 @@ RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
 WORKDIR /app
 COPY . .
 
-# Recomendado: Maven Wrapper (mvnw)
+# Compilar con Maven Wrapper
 RUN chmod +x mvnw && ./mvnw -DskipTests package
+
+# Copiar el jar a un nombre fijo (sin comodines)
+RUN cp target/*.jar /app/app.jar
 
 RUN mkdir -p /tmp/yt && chmod 777 /tmp/yt
 
@@ -20,4 +23,5 @@ ENV YT_DLP_PATH=yt-dlp
 ENV TMP_DIR=/tmp/yt
 
 EXPOSE 8080
-CMD ["java","-jar","target/*.jar"]
+
+CMD ["java","-jar","/app/app.jar"]
