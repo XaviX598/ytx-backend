@@ -10,12 +10,29 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.*;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api")
 public class VideoController {
+
+    private String prepareCookies() {
+        String cookiesContent = System.getenv("YT_COOKIES_CONTENT");
+        if (cookiesContent == null || cookiesContent.isBlank()) {
+            System.out.println("[AUTH] No se detectó YT_COOKIES_CONTENT. Operando sin cookies.");
+            return null;
+        }
+        try {
+            Path path = Paths.get(TMP_DIR, "cookies.txt");
+            Files.writeString(path, cookiesContent); // Requiere Java 11+
+            return path.toString();
+        } catch (Exception e) {
+            System.err.println("[ERROR] No se pudo escribir el archivo de cookies: " + e.getMessage());
+            return null;
+        }
+    }
 
     private final String YT_DLP_PATH = System.getenv().getOrDefault("YT_DLP_PATH", "yt-dlp");
 private final String TMP_DIR = System.getenv().getOrDefault("TMP_DIR", System.getProperty("java.io.tmpdir"));
@@ -32,6 +49,18 @@ public ResponseEntity<String> getVideoInfo(@RequestBody Map<String, String> payl
     }
 
     try {
+
+        String cookiesPath = prepareCookies();
+List<String> command = new java.util.ArrayList<>(java.util.Arrays.asList(
+    YT_DLP_PATH, "--no-warnings", "--dump-json"
+));
+
+if (cookiesPath != null) {
+    command.add("--cookies");
+    command.add(cookiesPath);
+}
+command.add(videoUrl);
+
         ProcessBuilder pb = new ProcessBuilder(
                 YT_DLP_PATH,
                 "--no-warnings",
@@ -118,6 +147,21 @@ public ResponseEntity<StreamingResponseBody> downloadVideo(@RequestBody Map<Stri
                         "-o", outTemplate,
                         videoUrl
                       );
+
+                      String cookiesPath = prepareCookies();
+
+java.util.List<String> command = new java.util.ArrayList<>(java.util.Arrays.asList(
+    YT_DLP_PATH,
+    "-f", formatSelector,
+    "--merge-output-format", "mp4",
+    "-o", outTemplate
+));
+
+if (cookiesPath != null) {
+    command.add("--cookies");
+    command.add(cookiesPath);
+}
+command.add(videoUrl);
 
             pb.redirectErrorStream(true);
             Process process = pb.start();
