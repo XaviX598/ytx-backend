@@ -21,15 +21,18 @@ public class VideoController {
     private String prepareCookies() {
         String cookiesContent = System.getenv("YT_COOKIES_CONTENT");
         if (cookiesContent == null || cookiesContent.isBlank()) {
-            System.out.println("[AUTH] No se detectó YT_COOKIES_CONTENT. Operando sin cookies.");
+            System.out.println("[AUTH] ERROR: La variable YT_COOKIES_CONTENT está vacía.");
             return null;
         }
         try {
             Path path = Paths.get(TMP_DIR, "cookies.txt");
-            Files.writeString(path, cookiesContent); // Requiere Java 11+
+            Files.writeString(path, cookiesContent);
+            
+            // Log para confirmar el tamaño del archivo creado
+            System.out.println("[AUTH] Archivo cookies.txt creado. Tamaño: " + Files.size(path) + " bytes.");
             return path.toString();
         } catch (Exception e) {
-            System.err.println("[ERROR] No se pudo escribir el archivo de cookies: " + e.getMessage());
+            System.err.println("[ERROR] No se pudo escribir cookies: " + e.getMessage());
             return null;
         }
     }
